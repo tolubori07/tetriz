@@ -219,15 +219,15 @@ fn drawGame() !void {
     rl.clearBackground(color.ray_white);
     if (!gameOver) {
         var offset: rl.Vector2 = undefined;
-        offset.x = @intCast(screenWidth / 2 - (GRID_HORIZONTAL_SIZE * SQUARE_SIZE / 2) - 50);
-        offset.y = @intCast(screenHeight / 2 - ((GRID_VERTICAL_SIZE - 1) * SQUARE_SIZE / 2) + SQUARE_SIZE * 2);
+        offset.x = @as(i32, screenWidth) / 2 - @as(i32, (GRID_HORIZONTAL_SIZE * SQUARE_SIZE / 2)) - 50;
+        offset.y = @as(i32, screenHeight) / 2 - @as(i32, ((GRID_VERTICAL_SIZE - 1) * SQUARE_SIZE / 2)) + SQUARE_SIZE * 2;
 
         offset.y -= 50; // NOTE: Hardcoded position!
         const controller = offset.x;
         for (0..GRID_VERTICAL_SIZE) |j| {
             for (0..GRID_HORIZONTAL_SIZE) |i| {
                 if (grid[i][j] == GridSquare.empty) {
-                    drawLine(@intCast(offset.x), @intCast(offset.y), @intCast(offset.x + SQUARE_SIZE), @intCast(offset.y), color.light_gray);
+                    drawLine(@as(i32, @intCast(offset.x)), @as(i32, @intCast(offset.y)), @as(i32, @intCast(offset.x + SQUARE_SIZE)), @as(i32, @intCast(offset.y)), color.light_gray);
                     drawLine(offset.x, offset.y, offset.x, offset.y + SQUARE_SIZE, color.light_gray);
                     drawLine(offset.x + SQUARE_SIZE, offset.y, offset.x + SQUARE_SIZE, offset.y + SQUARE_SIZE, color.light_gray);
                     drawLine(offset.x, offset.y + SQUARE_SIZE, offset.x + SQUARE_SIZE, offset.y + SQUARE_SIZE, color.light_gray);
