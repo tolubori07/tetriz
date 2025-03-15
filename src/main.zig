@@ -72,7 +72,7 @@ fn deleteCompleteLines() i32 {
     var deletedLines: i32 = 0;
 
     // Erase the completed line
-    var j = GRID_VERTICAL_SIZE - 2;
+    var j: usize = GRID_VERTICAL_SIZE - 2;
     while (j >= 0) : (j -= 1) {
         while (grid[1][j] == GridSquare.fading) {
             for (1..GRID_HORIZONTAL_SIZE - 1) |i| {
@@ -81,7 +81,7 @@ fn deleteCompleteLines() i32 {
 
             var j2 = j - 1;
             while (j2 >= 0) : (j2 -= 1) {
-                var k = 1;
+                var k: usize = 1;
                 while (k < GRID_HORIZONTAL_SIZE - 1) : (k += 1) {
                     if (grid[k][j2] == GridSquare.full) {
                         grid[k][j2 + 1] = GridSquare.full;
@@ -165,7 +165,7 @@ fn updateGame() !void {
                     lateralMovementCounter += 1;
                     turnMovementCounter += 1;
 
-                    if (rl.isKeyPressed(.left) || rl.isKeyPressed(.right)) lateralMovementCounter = LATERAL_SPEED;
+                    if (rl.isKeyPressed(.left) or rl.isKeyPressed(.right)) lateralMovementCounter = LATERAL_SPEED;
                     if (rl.isKeyPressed(.up)) turnMovementCounter = TURNING_SPEED;
 
                     if (rl.isKeyDown(.down) and (fastFallMovementCounter >= FAST_FALL_AWAIT_COUNTER)) {
@@ -196,7 +196,7 @@ fn updateGame() !void {
                 }
             } else {
                 fadeLineCounter += 1;
-                if (fadeLineCounter % 8 < 4) fadingColor = color.maroon else fadingColor = color.gray;
+                if (@mod(fadeLineCounter, 8) < 4) fadingColor = color.maroon else fadingColor = color.gray;
                 if (fadeLineCounter >= FADING_TIME) {
                     const deletedLines: i32 = deleteCompleteLines();
                     fadeLineCounter = 0;
@@ -207,7 +207,7 @@ fn updateGame() !void {
         }
     } else {
         if (isKeyPressed(.enter)) {
-            initGame();
+            try initGame();
             gameOver = false;
         }
     }
@@ -219,8 +219,8 @@ fn drawGame() !void {
     rl.clearBackground(color.ray_white);
     if (!gameOver) {
         var offset: rl.Vector2 = undefined;
-        offset.x = screenWidth / 2 - (GRID_HORIZONTAL_SIZE * SQUARE_SIZE / 2) - 50;
-        offset.y = screenHeight / 2 - ((GRID_VERTICAL_SIZE - 1) * SQUARE_SIZE / 2) + SQUARE_SIZE * 2;
+        offset.x = @intCast(screenWidth / 2 - (GRID_HORIZONTAL_SIZE * SQUARE_SIZE / 2) - 50);
+        offset.y = @intCast(screenHeight / 2 - ((GRID_VERTICAL_SIZE - 1) * SQUARE_SIZE / 2) + SQUARE_SIZE * 2);
 
         offset.y -= 50; // NOTE: Hardcoded position!
         const controller = offset.x;
@@ -299,7 +299,7 @@ fn CreatePiece() bool {
     }
 
     // We assign a random piece to the incoming one
-    GetRandomPiece();
+    try GetRandomPiece();
 
     // Assign the piece to the grid
     for (piecePositionX..piecePositionX + 4) |i| {
@@ -366,7 +366,7 @@ fn GetRandomPiece() !void {
             incomingPiece[3][1] = GridSquare.moving;
         }, // Inverted S shape
         else => {
-            try std.debug.print("Found unknown piece value", .{});
+            std.debug.print("Found unknown piece value", .{});
         },
     }
 }
@@ -374,22 +374,22 @@ fn GetRandomPiece() !void {
 fn resolveFallingMovement(detect: *bool, active: *bool) void {
     // If we finished moving this piece, we stop it
     if (detect.*) {
-        var j = GRID_VERTICAL_SIZE - 2;
+        var j: usize = GRID_VERTICAL_SIZE - 2;
         while (j >= 0) : (j -= 1) {
-            var i = 1;
+            var i: usize = 1;
             while (i < GRID_HORIZONTAL_SIZE - 1) : (i += 1) {
                 if (grid[i][j] == GridSquare.moving) {
                     grid[i][j] = GridSquare.full;
-                    detection.* = false;
+                    detect.* = false;
                     active.* = false;
                 }
             }
         }
     } else {
         // We move down the piece
-        var j = GRID_VERTICAL_SIZE - 2;
+        var j: usize = GRID_VERTICAL_SIZE - 2;
         while (j >= 0) : (j -= 1) {
-            var i = 1;
+            var i: usize = 1;
             while (i < GRID_HORIZONTAL_SIZE - 1) : (i += 1) {
                 if (grid[i][j] == GridSquare.moving) {
                     grid[i][j + 1] = GridSquare.moving;
@@ -409,13 +409,13 @@ fn resolveLateralMovement() bool {
     if (rl.isKeyDown(.left)) // Move left
     {
         // Check if is possible to move to left
-        var j = GRID_VERTICAL_SIZE - 2;
+        var j: usize = GRID_VERTICAL_SIZE - 2;
         while (j >= 0) : (j -= 1) {
-            var i = 1;
+            var i: usize = 1;
             while (i < GRID_HORIZONTAL_SIZE - 1) : (i += 1) {
                 if (grid[i][j] == GridSquare.moving) {
                     // Check if we are touching the left wall or we have a full square at the left
-                    if ((i - 1 == 0) || (grid[i - 1][j] == GridSquare.full)) collision = true;
+                    if ((i - 1 == 0) or (grid[i - 1][j] == GridSquare.full)) collision = true;
                 }
             }
         }
@@ -438,13 +438,13 @@ fn resolveLateralMovement() bool {
     } else if (rl.isKeyDown(.right)) // Move right
     {
         // Check if is possible to move to right
-        var j = GRID_VERTICAL_SIZE - 2;
+        var j: usize = GRID_VERTICAL_SIZE - 2;
         while (j >= 0) : (j -= 1) {
-            var i = 1;
+            var i: usize = 1;
             while (i < GRID_HORIZONTAL_SIZE - 1) : (i += 1) {
                 if (grid[i][j] == GridSquare.moving) {
                     // Check if we are touching the right wall or we have a full square at the right
-                    if ((i + 1 == GRID_HORIZONTAL_SIZE - 1) || (grid[i + 1][j] == GridSquare.full)) {
+                    if ((i + 1 == GRID_HORIZONTAL_SIZE - 1) or (grid[i + 1][j] == GridSquare.full)) {
                         collision = true;
                     }
                 }
@@ -471,10 +471,10 @@ fn resolveLateralMovement() bool {
     return collision;
 }
 
-fn resolveTurnMovement() void {
+fn resolveTurnMovement() bool {
     // Input for turning the piece
     if (IsKeyDown(.up)) {
-        const aux: GridSquare = undefined;
+        var aux: GridSquare = undefined;
         var checker: bool = false;
 
         // Check all turning possibilities
@@ -566,13 +566,13 @@ fn resolveTurnMovement() void {
             piece[1][1] = piece[2][1];
             piece[2][1] = piece[2][2];
             piece[2][2] = piece[1][2];
-            piece[1][2] = aux; // Additional rotation logic...
+            piece[1][2] = aux;
         }
 
         // Clear the current piece from the grid
-        var j = GRID_VERTICAL_SIZE - 2;
+        var j: usize = GRID_VERTICAL_SIZE - 2;
         while (j >= 0) : (j -= 1) {
-            var i = 1;
+            var i: usize = 1;
             while (i < GRID_HORIZONTAL_SIZE - 1) : (i += 1) {
                 if (grid[i][j] == GridSquare.moving) {
                     grid[i][j] = GridSquare.empty;
@@ -588,11 +588,13 @@ fn resolveTurnMovement() void {
                 }
             }
         }
+        return true;
     }
+    return false;
 }
 
 fn CheckDetection(detect: *bool) void {
-    var j = GRID_VERTICAL_SIZE - 2;
+    var j: usize = GRID_VERTICAL_SIZE - 2;
     while (j >= 0) : (j -= 1) {
         for (1..GRID_HORIZONTAL_SIZE - 1) |i| {
             if ((grid[i][j] == GridSquare.moving) and ((grid[i][j + 1] == GridSquare.full) or (grid[i][j + 1] == GridSquare.block))) {
@@ -604,7 +606,7 @@ fn CheckDetection(detect: *bool) void {
 
 fn CheckCompletion(toDelete: *bool) void {
     var calculator: i32 = 0;
-    var j = GRID_VERTICAL_SIZE - 2;
+    var j: usize = GRID_VERTICAL_SIZE - 2;
     while (j >= 0) : (j -= 1) {
         calculator = 0;
         for (0..GRID_HORIZONTAL_SIZE - 1) |i| {
