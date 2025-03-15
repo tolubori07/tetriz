@@ -16,8 +16,7 @@ const IsKeyDown = rl.isKeyDown;
 const drawLine = rl.drawLine;
 const drawText = rl.drawText;
 const drawRectangle = rl.drawRectangle;
-
-// Enums and type definitions
+//Enums and type definitions
 const GridSquare = enum {
     empty,
     moving,
@@ -26,23 +25,22 @@ const GridSquare = enum {
     fading,
 };
 
-// Global variable definitions
+//global variable definitions
 const screenWidth: i32 = 800;
 const screenHeight: i32 = 450;
 
 var gameOver: bool = false;
 var pause: bool = false;
-
 // Matrices
 var grid: [GRID_HORIZONTAL_SIZE][GRID_VERTICAL_SIZE]GridSquare = undefined;
 var piece: [4][4]GridSquare = undefined;
 var incomingPiece: [4][4]GridSquare = undefined;
 
-// Track active piece position
+//track active piece position
 var piecePositionX: usize = 0;
 var piecePositionY: usize = 0;
 
-// Game params
+//game params
 var fadingColor: rl.Color = undefined;
 
 var beginPlay: bool = true;
@@ -53,14 +51,14 @@ var lineToDelete: bool = false;
 var level: i32 = 1;
 var lines: i32 = 0;
 
-// Counters
+//counters
 var gravityMovementCounter: i32 = 0;
 var lateralMovementCounter: i32 = 0;
 var turnMovementCounter: i32 = 0;
 var fastFallMovementCounter: i32 = 0;
 var fadeLineCounter: i32 = 0;
 
-// Based on level
+//Based on level
 var gravitySpeed: i32 = 30;
 
 //------------------------------------------------------------------------------------
@@ -68,37 +66,6 @@ var gravitySpeed: i32 = 30;
 //--------------------------------------------------------------------
 
 // Additional module functions
-fn deleteCompleteLines() i32 {
-    var deletedLines: i32 = 0;
-
-    // Erase the completed line
-    var j = GRID_VERTICAL_SIZE - 2;
-    while (j >= 0) : (j -= 1) {
-        while (grid[1][j] == GridSquare.fading) {
-            for (1..GRID_HORIZONTAL_SIZE - 1) |i| {
-                grid[i][j] = GridSquare.empty;
-            }
-
-            var j2 = j - 1;
-            while (j2 >= 0) : (j2 -= 1) {
-                var k = 1;
-                while (k < GRID_HORIZONTAL_SIZE - 1) : (k += 1) {
-                    if (grid[k][j2] == GridSquare.full) {
-                        grid[k][j2 + 1] = GridSquare.full;
-                        grid[k][j2] = GridSquare.empty;
-                    } else if (grid[k][j2] == GridSquare.fading) {
-                        grid[k][j2 + 1] = GridSquare.fading;
-                        grid[k][j2] = GridSquare.empty;
-                    }
-                }
-            }
-
-            deletedLines += 1;
-        }
-    }
-
-    return deletedLines;
-}
 
 pub fn main() !void {
     rl.initWindow(screenWidth, screenHeight, "Classic Game: Tetris");
@@ -132,18 +99,14 @@ fn initGame() !void {
     fadeLineCounter = 0;
     gravitySpeed = 30;
 
-    // Initialize the grid
     for (0..GRID_HORIZONTAL_SIZE) |i| {
         for (0..GRID_VERTICAL_SIZE) |j| {
             if ((j == GRID_VERTICAL_SIZE - 1) or (i == 0) or (i == GRID_HORIZONTAL_SIZE - 1)) {
                 grid[i][j] = GridSquare.block;
-            } else {
-                grid[i][j] = GridSquare.empty;
-            }
+            } else grid[i][j] = GridSquare.empty;
         }
     }
 
-    // Initialize the incoming piece
     for (0..4) |i| {
         for (0..4) |j| {
             incomingPiece[i][j] = GridSquare.empty;
@@ -157,7 +120,8 @@ fn updateGame() !void {
         if (!pause) {
             if (!lineToDelete) {
                 if (!pieceActive) {
-                    pieceActive = CreatePiece();
+                    pieceActive = Createpiece();
+
                     fastFallMovementCounter = 0;
                 } else {
                     fastFallMovementCounter += 1;
@@ -165,7 +129,7 @@ fn updateGame() !void {
                     lateralMovementCounter += 1;
                     turnMovementCounter += 1;
 
-                    if (rl.isKeyPressed(.left) || rl.isKeyPressed(.right)) lateralMovementCounter = LATERAL_SPEED;
+                    if (rl.isKeyPressed(.left) or rl.isKeyPressed(.right)) lateralMovementCounter = LATERAL_SPEED;
                     if (rl.isKeyPressed(.up)) turnMovementCounter = TURNING_SPEED;
 
                     if (rl.isKeyDown(.down) and (fastFallMovementCounter >= FAST_FALL_AWAIT_COUNTER)) {
@@ -184,6 +148,7 @@ fn updateGame() !void {
                     }
 
                     if (turnMovementCounter >= TURNING_SPEED) {
+                        // Update the turning movement and reset the turning counter
                         if (resolveTurnMovement()) turnMovementCounter = 0;
                     }
                 }
@@ -196,9 +161,10 @@ fn updateGame() !void {
                 }
             } else {
                 fadeLineCounter += 1;
-                if (fadeLineCounter % 8 < 4) fadingColor = color.maroon else fadingColor = color.gray;
+                if (@mod(fadeLineCounter, 8) < 4) fadingColor = color.maroon else fadingColor = color.gray;
                 if (fadeLineCounter >= FADING_TIME) {
-                    const deletedLines: i32 = deleteCompleteLines();
+                    var deletedLines: i32 = 0;
+                    deletedLines = deleteCompleteLines();
                     fadeLineCounter = 0;
                     lineToDelete = false;
                     lines += deletedLines;
@@ -207,7 +173,7 @@ fn updateGame() !void {
         }
     } else {
         if (isKeyPressed(.enter)) {
-            initGame();
+            try initGame();
             gameOver = false;
         }
     }
@@ -219,18 +185,18 @@ fn drawGame() !void {
     rl.clearBackground(color.ray_white);
     if (!gameOver) {
         var offset: rl.Vector2 = undefined;
-        offset.x = screenWidth / 2 - (GRID_HORIZONTAL_SIZE * SQUARE_SIZE / 2) - 50;
-        offset.y = screenHeight / 2 - ((GRID_VERTICAL_SIZE - 1) * SQUARE_SIZE / 2) + SQUARE_SIZE * 2;
+        offset.x = @as(i32, screenWidth / 2 - (GRID_HORIZONTAL_SIZE * SQUARE_SIZE / 2) - 50);
+        offset.y = @as(i32, screenHeight / 2 - ((GRID_VERTICAL_SIZE - 1) * SQUARE_SIZE / 2) + SQUARE_SIZE * 2);
 
-        offset.y -= 50; // NOTE: Hardcoded position!
+        offset.y -= 50; // NOTE: Harcoded position!
         const controller = offset.x;
         for (0..GRID_VERTICAL_SIZE) |j| {
             for (0..GRID_HORIZONTAL_SIZE) |i| {
                 if (grid[i][j] == GridSquare.empty) {
-                    drawLine(@intCast(offset.x), @intCast(offset.y), @intCast(offset.x + SQUARE_SIZE), @intCast(offset.y), color.light_gray);
-                    drawLine(offset.x, offset.y, offset.x, offset.y + SQUARE_SIZE, color.light_gray);
-                    drawLine(offset.x + SQUARE_SIZE, offset.y, offset.x + SQUARE_SIZE, offset.y + SQUARE_SIZE, color.light_gray);
-                    drawLine(offset.x, offset.y + SQUARE_SIZE, offset.x + SQUARE_SIZE, offset.y + SQUARE_SIZE, color.light_gray);
+                    drawLine(@as(i32, offset.x), @as(i32, offset.y), @as(i32, (offset.x + SQUARE_SIZE)), @as(i32, offset.y), rl.Color.light_gray);
+                    drawLine(@as(i32, offset.x), @as(i32, offset.y), @as(i32, offset.x), @as(i32, (offset.y + SQUARE_SIZE)), color.light_gray);
+                    drawLine(@as(i32, (offset.x + SQUARE_SIZE)), @as(i32, offset.y), @as(i32, (offset.x + SQUARE_SIZE)), @as(i32, (offset.y + SQUARE_SIZE)), color.light_gray);
+                    drawLine(@as(i32, offset.x), @as(i32, (offset.y + SQUARE_SIZE)), @as(i32, (offset.x + SQUARE_SIZE)), @as(i32, (offset.y + SQUARE_SIZE)), color.light_gray);
                     offset.x += SQUARE_SIZE;
                 } else if (grid[i][j] == GridSquare.full) {
                     drawRectangle(offset.x, offset.y, SQUARE_SIZE, SQUARE_SIZE, color.gray);
@@ -255,7 +221,10 @@ fn drawGame() !void {
         for (0..4) |j| {
             for (0..4) |i| {
                 if (incomingPiece[i][j] == GridSquare.empty) {
-                    drawLine(@intCast(offset.x), @intCast(offset.y), @intCast(offset.x + SQUARE_SIZE), @intCast(offset.y), color.light_gray);
+                    drawLine(offset.x, offset.y, offset.x + SQUARE_SIZE, offset.y, color.light_gray);
+                    drawLine(offset.x, offset.y, offset.x, offset.y + SQUARE_SIZE, color.light_gray);
+                    drawLine(offset.x + SQUARE_SIZE, offset.y, offset.x + SQUARE_SIZE, offset.y + SQUARE_SIZE, color.light_gray);
+                    drawLine(offset.x, offset.y + SQUARE_SIZE, offset.x + SQUARE_SIZE, offset.y + SQUARE_SIZE, color.light_gray);
                     offset.x += SQUARE_SIZE;
                 } else if (incomingPiece[i][j] == GridSquare.moving) {
                     drawRectangle(offset.x, offset.y, SQUARE_SIZE, SQUARE_SIZE, color.light_gray);
@@ -268,12 +237,10 @@ fn drawGame() !void {
         }
 
         drawText("INCOMING:", offset.x, offset.y - 100, 10, color.light_gray);
-        drawText(rl.textFormat("LINES:  Di", lines), offset.x, offset.y + 20, 10, color.gray);
+        drawText(rl.textFormat("LINES:      %04i", lines), offset.x, offset.y + 20, 10, color.gray);
 
         if (pause) drawText("GAME PAUSED", screenWidth / 2 - rl.measureText("GAME PAUSED", 40) / 2, screenHeight / 2 - 40, 40, color.light_gray);
-    } else {
-        drawText("PRESS [ENTER] TO PLAY AGAIN", rl.getScreenWidth() / 2 - rl.measureText("PRESS [ENTER] TO PLAY AGAIN", 20) / 2, rl.getScreenHeight() / 2 - 50, 20, color.gray);
-    }
+    } else drawText("PRESS [ENTER] TO PLAY AGAIN", rl.getScreenWidth() / 2 - rl.measureText("PRESS [ENTER] TO PLAY AGAIN", 20) / 2, rl.getScreenHeight() / 2 - 50, 20, color.gray);
 }
 
 fn updateDrawFrame() !void {
@@ -281,13 +248,13 @@ fn updateDrawFrame() !void {
     try drawGame();
 }
 
-fn CreatePiece() bool {
+fn Createpiece() bool {
     piecePositionX = ((GRID_HORIZONTAL_SIZE - 4) / 2);
     piecePositionY = 0;
 
     // If the game is starting and you are going to create the first piece, we create an extra one
     if (beginPlay) {
-        try GetRandomPiece();
+        GetRandomPiece();
         beginPlay = false;
     }
 
@@ -304,16 +271,14 @@ fn CreatePiece() bool {
     // Assign the piece to the grid
     for (piecePositionX..piecePositionX + 4) |i| {
         for (0..4) |j| {
-            if (piece[i - @as(usize, piecePositionX)][j] == GridSquare.moving) {
-                grid[i][j] = GridSquare.moving;
-            }
+            if (piece[i - piecePositionX][j] == GridSquare.moving) grid[i][j] = GridSquare.moving;
         }
     }
 
     return true;
 }
 
-fn GetRandomPiece() !void {
+fn GetRandomPiece() void {
     const random = rl.getRandomValue(0, 6);
 
     for (0..4) |i| {
@@ -328,45 +293,45 @@ fn GetRandomPiece() !void {
             incomingPiece[2][1] = GridSquare.moving;
             incomingPiece[1][2] = GridSquare.moving;
             incomingPiece[2][2] = GridSquare.moving;
-        }, // Cube
+        }, //Cube
         1 => {
             incomingPiece[1][0] = GridSquare.moving;
             incomingPiece[1][1] = GridSquare.moving;
             incomingPiece[1][2] = GridSquare.moving;
             incomingPiece[2][2] = GridSquare.moving;
-        }, // L
+        }, //L
         2 => {
             incomingPiece[1][2] = GridSquare.moving;
             incomingPiece[2][0] = GridSquare.moving;
             incomingPiece[2][1] = GridSquare.moving;
             incomingPiece[2][2] = GridSquare.moving;
-        }, // Inverted L
+        }, //L inversa
         3 => {
             incomingPiece[0][1] = GridSquare.moving;
             incomingPiece[1][1] = GridSquare.moving;
             incomingPiece[2][1] = GridSquare.moving;
             incomingPiece[3][1] = GridSquare.moving;
-        }, // Straight line
+        }, //Recta
         4 => {
             incomingPiece[1][0] = GridSquare.moving;
             incomingPiece[1][1] = GridSquare.moving;
             incomingPiece[1][2] = GridSquare.moving;
             incomingPiece[2][1] = GridSquare.moving;
-        }, // T shape
+        }, //Creu tallada
         5 => {
             incomingPiece[1][1] = GridSquare.moving;
             incomingPiece[2][1] = GridSquare.moving;
             incomingPiece[2][2] = GridSquare.moving;
             incomingPiece[3][2] = GridSquare.moving;
-        }, // S shape
+        }, //S
         6 => {
             incomingPiece[1][2] = GridSquare.moving;
             incomingPiece[2][2] = GridSquare.moving;
             incomingPiece[2][1] = GridSquare.moving;
             incomingPiece[3][1] = GridSquare.moving;
-        }, // Inverted S shape
+        }, //S inversa
         else => {
-            try std.debug.print("Found unknown piece value", .{});
+            std.debug.print("Unexpected random value: {}\n", .{random});
         },
     }
 }
@@ -374,13 +339,13 @@ fn GetRandomPiece() !void {
 fn resolveFallingMovement(detect: *bool, active: *bool) void {
     // If we finished moving this piece, we stop it
     if (detect.*) {
-        var j = GRID_VERTICAL_SIZE - 2;
+        const j = GRID_VERTICAL_SIZE - 2;
         while (j >= 0) : (j -= 1) {
-            var i = 1;
+            const i = 1;
             while (i < GRID_HORIZONTAL_SIZE - 1) : (i += 1) {
                 if (grid[i][j] == GridSquare.moving) {
                     grid[i][j] = GridSquare.full;
-                    detection.* = false;
+                    detect.* = false;
                     active.* = false;
                 }
             }
@@ -409,9 +374,9 @@ fn resolveLateralMovement() bool {
     if (rl.isKeyDown(.left)) // Move left
     {
         // Check if is possible to move to left
-        var j = GRID_VERTICAL_SIZE - 2;
+        const j = GRID_VERTICAL_SIZE - 2;
         while (j >= 0) : (j -= 1) {
-            var i = 1;
+            const i = 1;
             while (i < GRID_HORIZONTAL_SIZE - 1) : (i += 1) {
                 if (grid[i][j] == GridSquare.moving) {
                     // Check if we are touching the left wall or we have a full square at the left
@@ -426,9 +391,9 @@ fn resolveLateralMovement() bool {
             while (k >= 0) : (k -= 1) {
                 var i = 1;
                 while (i < GRID_HORIZONTAL_SIZE - 1) : (i += 1) { // Move everything to the left
-                    if (grid[i][k] == GridSquare.moving) {
-                        grid[i - 1][k] = GridSquare.moving;
-                        grid[i][k] = GridSquare.empty;
+                    if (grid[i][j] == GridSquare.moving) {
+                        grid[i - 1][j] = GridSquare.moving;
+                        grid[i][j] = GridSquare.empty;
                     }
                 }
             }
@@ -457,9 +422,9 @@ fn resolveLateralMovement() bool {
             while (l >= 0) : (l -= 1) {
                 var i = 1;
                 while (i < GRID_HORIZONTAL_SIZE - 1) : (i += 1) { // Move everything to the right
-                    if (grid[i][l] == GridSquare.moving) {
-                        grid[i + 1][l] = GridSquare.moving;
-                        grid[i][l] = GridSquare.empty;
+                    if (grid[i][j] == GridSquare.moving) {
+                        grid[i + 1][j] = GridSquare.moving;
+                        grid[i][j] = GridSquare.empty;
                     }
                 }
             }
@@ -471,10 +436,10 @@ fn resolveLateralMovement() bool {
     return collision;
 }
 
-fn resolveTurnMovement() void {
+fn resolveTurnMovement() bool {
     // Input for turning the piece
     if (IsKeyDown(.up)) {
-        const aux: GridSquare = undefined;
+        var aux: GridSquare = undefined;
         var checker: bool = false;
 
         // Check all turning possibilities
@@ -543,7 +508,6 @@ fn resolveTurnMovement() void {
             (grid[piecePositionX + 2][piecePositionY + 2] != GridSquare.moving)) checker = true;
 
         if (!checker) {
-            // Rotate the piece
             aux = piece[0][0];
             piece[0][0] = piece[3][0];
             piece[3][0] = piece[3][3];
@@ -566,10 +530,9 @@ fn resolveTurnMovement() void {
             piece[1][1] = piece[2][1];
             piece[2][1] = piece[2][2];
             piece[2][2] = piece[1][2];
-            piece[1][2] = aux; // Additional rotation logic...
+            piece[1][2] = aux;
         }
 
-        // Clear the current piece from the grid
         var j = GRID_VERTICAL_SIZE - 2;
         while (j >= 0) : (j -= 1) {
             var i = 1;
@@ -580,7 +543,6 @@ fn resolveTurnMovement() void {
             }
         }
 
-        // Place the rotated piece on the grid
         for (piecePositionX..piecePositionX + 4) |i| {
             for (piecePositionY..piecePositionY + 4) |k| {
                 if (piece[i - piecePositionX][k - piecePositionY] == GridSquare.moving) {
@@ -588,15 +550,19 @@ fn resolveTurnMovement() void {
                 }
             }
         }
+
+        return true;
     }
+
+    return false;
 }
 
 fn CheckDetection(detect: *bool) void {
-    var j = GRID_VERTICAL_SIZE - 2;
+    const j = GRID_VERTICAL_SIZE - 2;
     while (j >= 0) : (j -= 1) {
-        for (1..GRID_HORIZONTAL_SIZE - 1) |i| {
-            if ((grid[i][j] == GridSquare.moving) and ((grid[i][j + 1] == GridSquare.full) or (grid[i][j + 1] == GridSquare.block))) {
-                detect.* = true;
+        {
+            for (1..GRID_HORIZONTAL_SIZE - 1) |i| {
+                if ((grid[i][j] == GridSquare.moving) and ((grid[i][j + 1] == GridSquare.full) or (grid[i][j + 1] == GridSquare.block))) detect.* = true;
             }
         }
     }
@@ -604,7 +570,7 @@ fn CheckDetection(detect: *bool) void {
 
 fn CheckCompletion(toDelete: *bool) void {
     var calculator: i32 = 0;
-    var j = GRID_VERTICAL_SIZE - 2;
+    const j = GRID_VERTICAL_SIZE - 2;
     while (j >= 0) : (j -= 1) {
         calculator = 0;
         for (0..GRID_HORIZONTAL_SIZE - 1) |i| {
@@ -617,6 +583,7 @@ fn CheckCompletion(toDelete: *bool) void {
             if (calculator == GRID_HORIZONTAL_SIZE - 2) {
                 toDelete.* = true;
                 calculator = 0;
+                // points++;
 
                 // Mark the completed line
                 for (1..GRID_HORIZONTAL_SIZE - 1) |z| {
@@ -625,4 +592,36 @@ fn CheckCompletion(toDelete: *bool) void {
             }
         }
     }
+}
+
+fn deleteCompleteLines() i32 {
+    var deletedLines: i32 = 0;
+
+    // Erase the completed line
+    var j = GRID_VERTICAL_SIZE - 2;
+    while (j >= 0) : (j -= 1) {
+        while (grid[1][j] == GridSquare.fading) {
+            for (1..GRID_HORIZONTAL_SIZE - 1) |i| {
+                grid[i][j] = GridSquare.empty;
+            }
+
+            var j2 = j - 1;
+            while (j2 >= 0) : (j2 -= 1) {
+                var k = 1;
+                while (k < GRID_HORIZONTAL_SIZE - 1) : (k += 1) {
+                    if (grid[i2][j2] == GridSquare.full) {
+                        grid[i2][j2 + 1] = GridSquare.full;
+                        grid[i2][j2] = GridSquare.empty;
+                    } else if (grid[i2][j2] == GridSquare.fading) {
+                        grid[i2][j2 + 1] = GridSquare.fading;
+                        grid[i2][j2] = GridSquare.empty;
+                    }
+                }
+            }
+
+            deletedLines += 1;
+        }
+    }
+
+    return deletedLines;
 }
