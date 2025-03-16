@@ -28,7 +28,7 @@ const GridSquare = enum {
 
 // Global variable definitions
 const screenWidth: i32 = 800;
-const screenHeight: i32 = 450;
+const screenHeight: i32 = 600;
 
 var gameOver: bool = false;
 var pause: bool = false;
@@ -62,43 +62,6 @@ var fadeLineCounter: i32 = 0;
 
 // Based on level
 var gravitySpeed: i32 = 30;
-
-//------------------------------------------------------------------------------------
-// Module Functions Declaration (local)
-//--------------------------------------------------------------------
-
-// Additional module functions
-fn deleteCompleteLines() i32 {
-    var deletedLines: i32 = 0;
-
-    // Erase the completed line
-    var j: usize = GRID_VERTICAL_SIZE - 2;
-    while (j >= 0) : (j -= 1) {
-        while (grid[1][j] == GridSquare.fading) {
-            for (1..GRID_HORIZONTAL_SIZE - 1) |i| {
-                grid[i][j] = GridSquare.empty;
-            }
-
-            var j2 = j - 1;
-            while (j2 >= 0) : (j2 -= 1) {
-                var k: usize = 1;
-                while (k < GRID_HORIZONTAL_SIZE - 1) : (k += 1) {
-                    if (grid[k][j2] == GridSquare.full) {
-                        grid[k][j2 + 1] = GridSquare.full;
-                        grid[k][j2] = GridSquare.empty;
-                    } else if (grid[k][j2] == GridSquare.fading) {
-                        grid[k][j2 + 1] = GridSquare.fading;
-                        grid[k][j2] = GridSquare.empty;
-                    }
-                }
-            }
-
-            deletedLines += 1;
-        }
-    }
-
-    return deletedLines;
-}
 
 pub fn main() !void {
     rl.initWindow(screenWidth, screenHeight, "Classic Game: Tetris");
@@ -196,7 +159,7 @@ fn updateGame() !void {
                 }
             } else {
                 fadeLineCounter += 1;
-                if (@mod(fadeLineCounter, 8) < 4) fadingColor = color.maroon else fadingColor = color.gray;
+                if (@mod(fadeLineCounter, 8) < 4) fadingColor = color{ .r = 255, .g = 49, .b = 49, .a = 255 } else fadingColor = color.gray;
                 if (fadeLineCounter >= FADING_TIME) {
                     const deletedLines: i32 = deleteCompleteLines();
                     fadeLineCounter = 0;
@@ -216,7 +179,7 @@ fn updateGame() !void {
 fn drawGame() !void {
     rl.beginDrawing();
     defer rl.endDrawing();
-    rl.clearBackground(color.ray_white);
+    rl.clearBackground(color.black);
     if (!gameOver) {
         var offset: rl.Vector2 = undefined;
         offset.x = @as(i32, (@as(i32, screenWidth) / 2 - @as(i32, (GRID_HORIZONTAL_SIZE * SQUARE_SIZE / 2)) - 50));
@@ -227,7 +190,6 @@ fn drawGame() !void {
         for (0..GRID_VERTICAL_SIZE) |j| {
             for (0..GRID_HORIZONTAL_SIZE) |i| {
                 if (grid[i][j] == GridSquare.empty) {
-                    //drawLine(offset.x, offset.y, offset.x + SQUARE_SIZE, offset.y, color.light_gray);
                     drawLine(@as(i32, @intFromFloat(offset.x)), @as(i32, @intFromFloat(offset.y)), @as(i32, @intFromFloat(offset.x + SQUARE_SIZE)), @as(i32, @intFromFloat(offset.y)), color.light_gray);
 
                     drawLine(@as(i32, @intFromFloat(offset.x)), @as(i32, @intFromFloat(offset.y)), @as(i32, @intFromFloat(offset.x)), @as(i32, @intFromFloat(offset.y + SQUARE_SIZE)), color.light_gray);
@@ -270,11 +232,11 @@ fn drawGame() !void {
         }
 
         drawText("INCOMING:", @as(i32, @intFromFloat(offset.x)), @as(i32, @intFromFloat(offset.y - 100)), 10, color.light_gray);
-        drawText(rl.textFormat("LINES:  Di", .{lines}), @as(i32, @intFromFloat(offset.x)), @as(i32, @intFromFloat(offset.y + 20)), 10, color.gray);
+        drawText(rl.textFormat("LINES:  %08i", .{lines * 300}), @as(i32, @intFromFloat(offset.x)), @as(i32, @intFromFloat(offset.y + 20)), 10, color{ .r = 57, .g = 255, .b = 20, .a = 255 });
 
-        if (pause) drawText("GAME PAUSED", screenWidth / 2 - @divExact(rl.measureText("GAME PAUSED", 40), 2), screenHeight / 2 - 40, 40, color.light_gray);
+        if (pause) drawText("GAME PAUSED", screenWidth / 2 - @divTrunc(rl.measureText("GAME PAUSED", 40), 2), screenHeight / 2 - 40, 40, color.light_gray);
     } else {
-        drawText("PRESS [ENTER] TO PLAY AGAIN", @divExact(rl.getScreenWidth(), 2) - @divExact(rl.measureText("PRESS [ENTER] TO PLAY AGAIN", 20), 2), @divExact(rl.getScreenHeight(), 2 - 50), 20, color.gray);
+        drawText("PRESS [ENTER] TO PLAY AGAIN", @divTrunc(rl.getScreenWidth(), 2) - @divTrunc(rl.measureText("PRESS [ENTER] TO PLAY AGAIN", 20), 2), @divTrunc(rl.getScreenHeight(), 2) - 50, 20, color.red);
     }
 }
 
@@ -374,10 +336,9 @@ fn GetRandomPiece() !void {
 }
 
 fn resolveFallingMovement(detect: *bool, active: *bool) void {
-    // If we finished moving this piece, we stop it
     if (detect.*) {
         var j: usize = GRID_VERTICAL_SIZE - 2;
-        while (j >= 0) : (j -= 1) {
+        while (true) {
             var i: usize = 1;
             while (i < GRID_HORIZONTAL_SIZE - 1) : (i += 1) {
                 if (grid[i][j] == GridSquare.moving) {
@@ -386,11 +347,13 @@ fn resolveFallingMovement(detect: *bool, active: *bool) void {
                     active.* = false;
                 }
             }
+            if (j == 0) break;
+            j -= 1;
         }
     } else {
         // We move down the piece
         var j: usize = GRID_VERTICAL_SIZE - 2;
-        while (j >= 0) : (j -= 1) {
+        while (true) {
             var i: usize = 1;
             while (i < GRID_HORIZONTAL_SIZE - 1) : (i += 1) {
                 if (grid[i][j] == GridSquare.moving) {
@@ -398,8 +361,9 @@ fn resolveFallingMovement(detect: *bool, active: *bool) void {
                     grid[i][j] = GridSquare.empty;
                 }
             }
+            if (j == 0) break;
+            j -= 1;
         }
-
         piecePositionY += 1;
     }
 }
@@ -407,145 +371,197 @@ fn resolveFallingMovement(detect: *bool, active: *bool) void {
 fn resolveLateralMovement() bool {
     var collision: bool = false;
 
-    // Piece movement
-    if (rl.isKeyDown(.left)) // Move left
-    {
-        // Check if is possible to move to left
+    // Check left movement
+    if (rl.isKeyDown(.left)) {
+        // Check if it's possible to move left.
+        // Loop through rows (j) from GRID_VERTICAL_SIZE - 2 down to 0.
         var j: usize = GRID_VERTICAL_SIZE - 2;
-        while (j >= 0) : (j -= 1) {
+        while (true) {
+            // Loop columns (i) from 1 to GRID_HORIZONTAL_SIZE - 2.
             var i: usize = 1;
             while (i < GRID_HORIZONTAL_SIZE - 1) : (i += 1) {
                 if (grid[i][j] == GridSquare.moving) {
-                    // Check if we are touching the left wall or we have a full square at the left
-                    if ((i - 1 == 0) or (grid[i - 1][j] == GridSquare.full)) collision = true;
-                }
-            }
-        }
-
-        // If able, move left
-        if (!collision) {
-            var k = GRID_VERTICAL_SIZE - 2;
-            while (k >= 0) : (k -= 1) {
-                var i = 1;
-                while (i < GRID_HORIZONTAL_SIZE - 1) : (i += 1) { // Move everything to the left
-                    if (grid[i][k] == GridSquare.moving) {
-                        grid[i - 1][k] = GridSquare.moving;
-                        grid[i][k] = GridSquare.empty;
+                    // If we’re touching the left wall (i-1 == 0)
+                    // or if the square to the left is FULL, flag a collision.
+                    if ((i - 1 == 0) or (grid[i - 1][j] == GridSquare.full)) {
+                        collision = true;
                     }
                 }
             }
-
-            piecePositionX -= 1;
+            if (j == 0) break;
+            j -= 1;
         }
-    } else if (rl.isKeyDown(.right)) // Move right
-    {
-        // Check if is possible to move to right
+
+        // If no collision, perform the movement
+        if (!collision) {
+            // Loop again to move the piece left.
+            j = GRID_VERTICAL_SIZE - 2;
+            while (true) {
+                var i: usize = 1;
+                while (i < GRID_HORIZONTAL_SIZE - 1) : (i += 1) {
+                    if (grid[i][j] == GridSquare.moving) {
+                        grid[i - 1][j] = GridSquare.moving;
+                        grid[i][j] = GridSquare.empty;
+                    }
+                }
+                if (j == 0) break;
+                j -= 1;
+            }
+            // Decrement the piece's x-position, ensuring no underflow.
+            if (piecePositionX > 0) {
+                piecePositionX -= 1;
+            }
+        }
+    }
+    // Check right movement
+    else if (rl.isKeyDown(.right)) {
+        // Check if it's possible to move right.
         var j: usize = GRID_VERTICAL_SIZE - 2;
-        while (j >= 0) : (j -= 1) {
+        while (true) {
             var i: usize = 1;
             while (i < GRID_HORIZONTAL_SIZE - 1) : (i += 1) {
                 if (grid[i][j] == GridSquare.moving) {
-                    // Check if we are touching the right wall or we have a full square at the right
+                    // Check if touching the right wall or if the right square is full.
                     if ((i + 1 == GRID_HORIZONTAL_SIZE - 1) or (grid[i + 1][j] == GridSquare.full)) {
                         collision = true;
                     }
                 }
             }
+            if (j == 0) break;
+            j -= 1;
         }
 
-        // If able move right
         if (!collision) {
-            var l = GRID_VERTICAL_SIZE - 2;
-            while (l >= 0) : (l -= 1) {
-                var i = 1;
-                while (i < GRID_HORIZONTAL_SIZE - 1) : (i += 1) { // Move everything to the right
-                    if (grid[i][l] == GridSquare.moving) {
-                        grid[i + 1][l] = GridSquare.moving;
-                        grid[i][l] = GridSquare.empty;
+            // Move the piece right.
+            j = GRID_VERTICAL_SIZE - 2;
+            while (true) {
+                // To avoid overwriting cells, iterate columns from rightmost (GRID_HORIZONTAL_SIZE - 1)
+                // down to 1.
+                var i: usize = GRID_HORIZONTAL_SIZE - 1;
+                while (true) {
+                    if (i < 1) break;
+                    if (grid[i][j] == GridSquare.moving) {
+                        grid[i + 1][j] = GridSquare.moving;
+                        grid[i][j] = GridSquare.empty;
                     }
+                    if (i == 1) break;
+                    i -= 1;
                 }
+                if (j == 0) break;
+                j -= 1;
             }
-
             piecePositionX += 1;
         }
     }
-
     return collision;
 }
 
 fn resolveTurnMovement() bool {
-    // Input for turning the piece
-    if (IsKeyDown(.up)) {
+    // Only attempt to rotate if the up key is pressed.
+    if (rl.isKeyDown(.up)) {
         var aux: GridSquare = undefined;
         var checker: bool = false;
 
-        // Check all turning possibilities
-        if ((grid[piecePositionX + 3][piecePositionY] == GridSquare.moving) and
-            (grid[piecePositionX][piecePositionY] != GridSquare.empty) and
-            (grid[piecePositionX][piecePositionY] != GridSquare.moving)) checker = true;
+        // Check all turning possibilities (translated directly from your C code)
+        if (grid[piecePositionX + 3][piecePositionY] == GridSquare.moving and
+            (grid[piecePositionX][piecePositionY] != GridSquare.empty and
+                grid[piecePositionX][piecePositionY] != GridSquare.moving))
+        {
+            checker = true;
+        }
+        if (grid[piecePositionX + 3][piecePositionY + 3] == GridSquare.moving and
+            (grid[piecePositionX + 3][piecePositionY] != GridSquare.empty and
+                grid[piecePositionX + 3][piecePositionY] != GridSquare.moving))
+        {
+            checker = true;
+        }
+        if (grid[piecePositionX][piecePositionY + 3] == GridSquare.moving and
+            (grid[piecePositionX + 3][piecePositionY + 3] != GridSquare.empty and
+                grid[piecePositionX + 3][piecePositionY + 3] != GridSquare.moving))
+        {
+            checker = true;
+        }
+        if (grid[piecePositionX][piecePositionY] == GridSquare.moving and
+            (grid[piecePositionX][piecePositionY + 3] != GridSquare.empty and
+                grid[piecePositionX][piecePositionY + 3] != GridSquare.moving))
+        {
+            checker = true;
+        }
+        if (grid[piecePositionX + 1][piecePositionY] == GridSquare.moving and
+            (grid[piecePositionX][piecePositionY + 2] != GridSquare.empty and
+                grid[piecePositionX][piecePositionY + 2] != GridSquare.moving))
+        {
+            checker = true;
+        }
+        if (grid[piecePositionX + 3][piecePositionY + 1] == GridSquare.moving and
+            (grid[piecePositionX + 1][piecePositionY] != GridSquare.empty and
+                grid[piecePositionX + 1][piecePositionY] != GridSquare.moving))
+        {
+            checker = true;
+        }
+        if (grid[piecePositionX + 2][piecePositionY + 3] == GridSquare.moving and
+            (grid[piecePositionX + 3][piecePositionY + 1] != GridSquare.empty and
+                grid[piecePositionX + 3][piecePositionY + 1] != GridSquare.moving))
+        {
+            checker = true;
+        }
+        if (grid[piecePositionX][piecePositionY + 2] == GridSquare.moving and
+            (grid[piecePositionX + 2][piecePositionY + 3] != GridSquare.empty and
+                grid[piecePositionX + 2][piecePositionY + 3] != GridSquare.moving))
+        {
+            checker = true;
+        }
+        if (grid[piecePositionX + 2][piecePositionY] == GridSquare.moving and
+            (grid[piecePositionX][piecePositionY + 1] != GridSquare.empty and
+                grid[piecePositionX][piecePositionY + 1] != GridSquare.moving))
+        {
+            checker = true;
+        }
+        if (grid[piecePositionX + 3][piecePositionY + 2] == GridSquare.moving and
+            (grid[piecePositionX + 2][piecePositionY] != GridSquare.empty and
+                grid[piecePositionX + 2][piecePositionY] != GridSquare.moving))
+        {
+            checker = true;
+        }
+        if (grid[piecePositionX + 1][piecePositionY + 3] == GridSquare.moving and
+            (grid[piecePositionX + 3][piecePositionY + 2] != GridSquare.empty and
+                grid[piecePositionX + 3][piecePositionY + 2] != GridSquare.moving))
+        {
+            checker = true;
+        }
+        if (grid[piecePositionX][piecePositionY + 1] == GridSquare.moving and
+            (grid[piecePositionX + 1][piecePositionY + 3] != GridSquare.empty and
+                grid[piecePositionX + 1][piecePositionY + 3] != GridSquare.moving))
+        {
+            checker = true;
+        }
+        if (grid[piecePositionX + 1][piecePositionY + 1] == GridSquare.moving and
+            (grid[piecePositionX + 1][piecePositionY + 2] != GridSquare.empty and
+                grid[piecePositionX + 1][piecePositionY + 2] != GridSquare.moving))
+        {
+            checker = true;
+        }
+        if (grid[piecePositionX + 2][piecePositionY + 1] == GridSquare.moving and
+            (grid[piecePositionX + 1][piecePositionY + 1] != GridSquare.empty and
+                grid[piecePositionX + 1][piecePositionY + 1] != GridSquare.moving))
+        {
+            checker = true;
+        }
+        if (grid[piecePositionX + 2][piecePositionY + 2] == GridSquare.moving and
+            (grid[piecePositionX + 2][piecePositionY + 1] != GridSquare.empty and
+                grid[piecePositionX + 2][piecePositionY + 1] != GridSquare.moving))
+        {
+            checker = true;
+        }
+        if (grid[piecePositionX + 1][piecePositionY + 2] == GridSquare.moving and
+            (grid[piecePositionX + 2][piecePositionY + 2] != GridSquare.empty and
+                grid[piecePositionX + 2][piecePositionY + 2] != GridSquare.moving))
+        {
+            checker = true;
+        }
 
-        if ((grid[piecePositionX + 3][piecePositionY + 3] == GridSquare.moving) and
-            (grid[piecePositionX + 3][piecePositionY] != GridSquare.empty) and
-            (grid[piecePositionX + 3][piecePositionY] != GridSquare.moving)) checker = true;
-
-        if ((grid[piecePositionX][piecePositionY + 3] == GridSquare.moving) and
-            (grid[piecePositionX + 3][piecePositionY + 3] != GridSquare.empty) and
-            (grid[piecePositionX + 3][piecePositionY + 3] != GridSquare.moving)) checker = true;
-
-        if ((grid[piecePositionX][piecePositionY] == GridSquare.moving) and
-            (grid[piecePositionX][piecePositionY + 3] != GridSquare.empty) and
-            (grid[piecePositionX][piecePositionY + 3] != GridSquare.moving)) checker = true;
-
-        if ((grid[piecePositionX + 1][piecePositionY] == GridSquare.moving) and
-            (grid[piecePositionX][piecePositionY + 2] != GridSquare.empty) and
-            (grid[piecePositionX][piecePositionY + 2] != GridSquare.moving)) checker = true;
-
-        if ((grid[piecePositionX + 3][piecePositionY + 1] == GridSquare.moving) and
-            (grid[piecePositionX + 1][piecePositionY] != GridSquare.empty) and
-            (grid[piecePositionX + 1][piecePositionY] != GridSquare.moving)) checker = true;
-
-        if ((grid[piecePositionX + 2][piecePositionY + 3] == GridSquare.moving) and
-            (grid[piecePositionX + 3][piecePositionY + 1] != GridSquare.empty) and
-            (grid[piecePositionX + 3][piecePositionY + 1] != GridSquare.moving)) checker = true;
-
-        if ((grid[piecePositionX][piecePositionY + 2] == GridSquare.moving) and
-            (grid[piecePositionX + 2][piecePositionY + 3] != GridSquare.empty) and
-            (grid[piecePositionX + 2][piecePositionY + 3] != GridSquare.moving)) checker = true;
-
-        if ((grid[piecePositionX + 2][piecePositionY] == GridSquare.moving) and
-            (grid[piecePositionX][piecePositionY + 1] != GridSquare.empty) and
-            (grid[piecePositionX][piecePositionY + 1] != GridSquare.moving)) checker = true;
-
-        if ((grid[piecePositionX + 3][piecePositionY + 2] == GridSquare.moving) and
-            (grid[piecePositionX + 2][piecePositionY] != GridSquare.empty) and
-            (grid[piecePositionX + 2][piecePositionY] != GridSquare.moving)) checker = true;
-
-        if ((grid[piecePositionX + 1][piecePositionY + 3] == GridSquare.moving) and
-            (grid[piecePositionX + 3][piecePositionY + 2] != GridSquare.empty) and
-            (grid[piecePositionX + 3][piecePositionY + 2] != GridSquare.moving)) checker = true;
-
-        if ((grid[piecePositionX][piecePositionY + 1] == GridSquare.moving) and
-            (grid[piecePositionX + 1][piecePositionY + 3] != GridSquare.empty) and
-            (grid[piecePositionX + 1][piecePositionY + 3] != GridSquare.moving)) checker = true;
-
-        if ((grid[piecePositionX + 1][piecePositionY + 1] == GridSquare.moving) and
-            (grid[piecePositionX + 1][piecePositionY + 2] != GridSquare.empty) and
-            (grid[piecePositionX + 1][piecePositionY + 2] != GridSquare.moving)) checker = true;
-
-        if ((grid[piecePositionX + 2][piecePositionY + 1] == GridSquare.moving) and
-            (grid[piecePositionX + 1][piecePositionY + 1] != GridSquare.empty) and
-            (grid[piecePositionX + 1][piecePositionY + 1] != GridSquare.moving)) checker = true;
-
-        if ((grid[piecePositionX + 2][piecePositionY + 2] == GridSquare.moving) and
-            (grid[piecePositionX + 2][piecePositionY + 1] != GridSquare.empty) and
-            (grid[piecePositionX + 2][piecePositionY + 1] != GridSquare.moving)) checker = true;
-
-        if ((grid[piecePositionX + 1][piecePositionY + 2] == GridSquare.moving) and
-            (grid[piecePositionX + 2][piecePositionY + 2] != GridSquare.empty) and
-            (grid[piecePositionX + 2][piecePositionY + 2] != GridSquare.moving)) checker = true;
-
+        // If no collision is detected, rotate the piece.
         if (!checker) {
-            // Rotate the piece
             aux = piece[0][0];
             piece[0][0] = piece[3][0];
             piece[3][0] = piece[3][3];
@@ -571,18 +587,20 @@ fn resolveTurnMovement() bool {
             piece[1][2] = aux;
         }
 
-        // Clear the current piece from the grid
+        // Clear the current piece from the grid.
         var j: usize = GRID_VERTICAL_SIZE - 2;
-        while (j >= 0) : (j -= 1) {
+        while (true) {
             var i: usize = 1;
             while (i < GRID_HORIZONTAL_SIZE - 1) : (i += 1) {
                 if (grid[i][j] == GridSquare.moving) {
                     grid[i][j] = GridSquare.empty;
                 }
             }
+            if (j == 0) break;
+            j -= 1;
         }
 
-        // Place the rotated piece on the grid
+        // Place the rotated piece on the grid.
         for (piecePositionX..piecePositionX + 4) |i| {
             for (piecePositionY..piecePositionY + 4) |k| {
                 if (piece[i - piecePositionX][k - piecePositionY] == GridSquare.moving) {
@@ -596,23 +614,27 @@ fn resolveTurnMovement() bool {
 }
 
 fn CheckDetection(detect: *bool) void {
-    var j: i32 = GRID_VERTICAL_SIZE - 2; // Keep j as i32
-    while (j >= 0) : (j -= 1) {
-        for (1..GRID_HORIZONTAL_SIZE - 1) |i| {
-            if ((grid[i][@as(usize, j)] == GridSquare.moving) and
-                ((grid[i][@as(usize, j + 1)] == GridSquare.full) or
-                    (grid[i][@as(usize, j + 1)] == GridSquare.block)))
+    // Start from the second-to-last row
+    var j: usize = GRID_VERTICAL_SIZE - 2;
+    while (true) {
+        for (1..(GRID_HORIZONTAL_SIZE - 1)) |i| {
+            // Now j is already a usize so no cast is needed.
+            if ((grid[i][j] == GridSquare.moving) and
+                ((grid[i][j + 1] == GridSquare.full) or
+                    (grid[i][j + 1] == GridSquare.block)))
             {
                 detect.* = true;
             }
         }
+        if (j == 0) break; // Prevent underflow when subtracting 1 from 0.
+        j -= 1;
     }
 }
 
 fn CheckCompletion(toDelete: *bool) void {
     var calculator: i32 = 0;
     var j: usize = GRID_VERTICAL_SIZE - 2;
-    while (j >= 0) : (j -= 1) {
+    while (true) {
         calculator = 0;
         for (0..GRID_HORIZONTAL_SIZE - 1) |i| {
             // Count each square of the line
@@ -631,5 +653,43 @@ fn CheckCompletion(toDelete: *bool) void {
                 }
             }
         }
+        if (j == 0) break; // Break before decrementing 0 to avoid underflow.
+        j -= 1;
     }
+}
+
+fn deleteCompleteLines() i32 {
+    var deletedLines: i32 = 0;
+
+    // Erase the completed line
+    var j: usize = GRID_VERTICAL_SIZE - 2;
+    while (true) {
+        while (grid[1][j] == GridSquare.fading) {
+            for (1..GRID_HORIZONTAL_SIZE - 1) |i| {
+                grid[i][j] = GridSquare.empty;
+            }
+
+            var j2 = j - 1;
+            while (true) {
+                var k: usize = 1;
+                while (k < GRID_HORIZONTAL_SIZE - 1) : (k += 1) {
+                    if (grid[k][j2] == GridSquare.full) {
+                        grid[k][j2 + 1] = GridSquare.full;
+                        grid[k][j2] = GridSquare.empty;
+                    } else if (grid[k][j2] == GridSquare.fading) {
+                        grid[k][j2 + 1] = GridSquare.fading;
+                        grid[k][j2] = GridSquare.empty;
+                    }
+                }
+                if (j2 == 0) break;
+                j2 -= 1;
+            }
+
+            deletedLines += 1;
+        }
+        if (j == 0) break;
+        j -= 1;
+    }
+
+    return deletedLines;
 }
