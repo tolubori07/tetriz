@@ -219,30 +219,32 @@ fn drawGame() !void {
     rl.clearBackground(color.ray_white);
     if (!gameOver) {
         var offset: rl.Vector2 = undefined;
-        offset.x = @as(i32, screenWidth) / 2 - @as(i32, (GRID_HORIZONTAL_SIZE * SQUARE_SIZE / 2)) - 50;
-        offset.y = @as(i32, screenHeight) / 2 - @as(i32, ((GRID_VERTICAL_SIZE - 1) * SQUARE_SIZE / 2)) + SQUARE_SIZE * 2;
+        offset.x = @as(i32, (@as(i32, screenWidth) / 2 - @as(i32, (GRID_HORIZONTAL_SIZE * SQUARE_SIZE / 2)) - 50));
+        offset.y = @as(i32, (@as(i32, screenHeight) / 2 - @as(i32, ((GRID_VERTICAL_SIZE - 1) * SQUARE_SIZE / 2)) + SQUARE_SIZE * 2));
 
         offset.y -= 50; // NOTE: Hardcoded position!
         const controller = offset.x;
         for (0..GRID_VERTICAL_SIZE) |j| {
             for (0..GRID_HORIZONTAL_SIZE) |i| {
                 if (grid[i][j] == GridSquare.empty) {
-                    drawLine(@as(i32, @intCast(offset.x)), @as(i32, @intCast(offset.y)), @as(i32, @intCast(offset.x + SQUARE_SIZE)), @as(i32, @intCast(offset.y)), color.light_gray);
-                    drawLine(offset.x, offset.y, offset.x, offset.y + SQUARE_SIZE, color.light_gray);
-                    drawLine(offset.x + SQUARE_SIZE, offset.y, offset.x + SQUARE_SIZE, offset.y + SQUARE_SIZE, color.light_gray);
-                    drawLine(offset.x, offset.y + SQUARE_SIZE, offset.x + SQUARE_SIZE, offset.y + SQUARE_SIZE, color.light_gray);
+                    //drawLine(offset.x, offset.y, offset.x + SQUARE_SIZE, offset.y, color.light_gray);
+                    drawLine(@as(i32, @intFromFloat(offset.x)), @as(i32, @intFromFloat(offset.y)), @as(i32, @intFromFloat(offset.x + SQUARE_SIZE)), @as(i32, @intFromFloat(offset.y)), color.light_gray);
+
+                    drawLine(@as(i32, @intFromFloat(offset.x)), @as(i32, @intFromFloat(offset.y)), @as(i32, @intFromFloat(offset.x)), @as(i32, @intFromFloat(offset.y + SQUARE_SIZE)), color.light_gray);
+                    drawLine(@as(i32, @intFromFloat(offset.x + SQUARE_SIZE)), @as(i32, @intFromFloat(offset.y)), @as(i32, @intFromFloat(offset.x + SQUARE_SIZE)), @as(i32, @intFromFloat(offset.y + SQUARE_SIZE)), color.light_gray);
+                    drawLine(@as(i32, @intFromFloat(offset.x)), @as(i32, @intFromFloat(offset.y + SQUARE_SIZE)), @as(i32, @intFromFloat(offset.x + SQUARE_SIZE)), @as(i32, @intFromFloat(offset.y + SQUARE_SIZE)), color.light_gray);
                     offset.x += SQUARE_SIZE;
                 } else if (grid[i][j] == GridSquare.full) {
-                    drawRectangle(offset.x, offset.y, SQUARE_SIZE, SQUARE_SIZE, color.gray);
+                    drawRectangle(@as(i32, @intFromFloat(offset.x)), @as(i32, @intFromFloat(offset.y)), @as(i32, @intFromFloat(SQUARE_SIZE)), @as(i32, @intFromFloat(SQUARE_SIZE)), color.gray);
                     offset.x += SQUARE_SIZE;
                 } else if (grid[i][j] == GridSquare.moving) {
-                    drawRectangle(offset.x, offset.y, SQUARE_SIZE, SQUARE_SIZE, color.dark_gray);
+                    drawRectangle(@as(i32, @intFromFloat(offset.x)), @as(i32, @intFromFloat(offset.y)), @as(i32, @intFromFloat(SQUARE_SIZE)), @as(i32, @intFromFloat(SQUARE_SIZE)), color.dark_gray);
                     offset.x += SQUARE_SIZE;
                 } else if (grid[i][j] == GridSquare.block) {
-                    drawRectangle(offset.x, offset.y, SQUARE_SIZE, SQUARE_SIZE, color.light_gray);
+                    drawRectangle(@as(i32, @intFromFloat(offset.x)), @as(i32, @intFromFloat(offset.y)), @as(i32, @intFromFloat(SQUARE_SIZE)), @as(i32, @intFromFloat(SQUARE_SIZE)), color.light_gray);
                     offset.x += SQUARE_SIZE;
                 } else if (grid[i][j] == GridSquare.fading) {
-                    drawRectangle(offset.x, offset.y, SQUARE_SIZE, SQUARE_SIZE, fadingColor);
+                    drawRectangle(@as(i32, @intFromFloat(offset.x)), @as(i32, @intFromFloat(offset.y)), @as(i32, @intFromFloat(SQUARE_SIZE)), @as(i32, @intFromFloat(SQUARE_SIZE)), fadingColor);
                     offset.x += SQUARE_SIZE;
                 }
             }
@@ -255,10 +257,10 @@ fn drawGame() !void {
         for (0..4) |j| {
             for (0..4) |i| {
                 if (incomingPiece[i][j] == GridSquare.empty) {
-                    drawLine(@intCast(offset.x), @intCast(offset.y), @intCast(offset.x + SQUARE_SIZE), @intCast(offset.y), color.light_gray);
+                    drawLine(@as(i32, @intFromFloat(offset.x)), @as(i32, @intFromFloat(offset.y)), @as(i32, @intFromFloat(offset.x + SQUARE_SIZE)), @as(i32, @intFromFloat(offset.y)), color.light_gray);
                     offset.x += SQUARE_SIZE;
                 } else if (incomingPiece[i][j] == GridSquare.moving) {
-                    drawRectangle(offset.x, offset.y, SQUARE_SIZE, SQUARE_SIZE, color.light_gray);
+                    drawRectangle(@as(i32, @intFromFloat(offset.x)), @as(i32, @intFromFloat(offset.y)), @as(i32, @intFromFloat(SQUARE_SIZE)), @as(i32, @intFromFloat(SQUARE_SIZE)), color.light_gray);
                     offset.x += SQUARE_SIZE;
                 }
             }
@@ -267,12 +269,12 @@ fn drawGame() !void {
             offset.y += SQUARE_SIZE;
         }
 
-        drawText("INCOMING:", offset.x, offset.y - 100, 10, color.light_gray);
-        drawText(rl.textFormat("LINES:  Di", lines), offset.x, offset.y + 20, 10, color.gray);
+        drawText("INCOMING:", @as(i32, @intFromFloat(offset.x)), @as(i32, @intFromFloat(offset.y - 100)), 10, color.light_gray);
+        drawText(rl.textFormat("LINES:  Di", .{lines}), @as(i32, @intFromFloat(offset.x)), @as(i32, @intFromFloat(offset.y + 20)), 10, color.gray);
 
-        if (pause) drawText("GAME PAUSED", screenWidth / 2 - rl.measureText("GAME PAUSED", 40) / 2, screenHeight / 2 - 40, 40, color.light_gray);
+        if (pause) drawText("GAME PAUSED", screenWidth / 2 - @divExact(rl.measureText("GAME PAUSED", 40), 2), screenHeight / 2 - 40, 40, color.light_gray);
     } else {
-        drawText("PRESS [ENTER] TO PLAY AGAIN", rl.getScreenWidth() / 2 - rl.measureText("PRESS [ENTER] TO PLAY AGAIN", 20) / 2, rl.getScreenHeight() / 2 - 50, 20, color.gray);
+        drawText("PRESS [ENTER] TO PLAY AGAIN", @divExact(rl.getScreenWidth(), 2) - @divExact(rl.measureText("PRESS [ENTER] TO PLAY AGAIN", 20), 2), @divExact(rl.getScreenHeight(), 2 - 50), 20, color.gray);
     }
 }
 
