@@ -596,10 +596,13 @@ fn resolveTurnMovement() bool {
 }
 
 fn CheckDetection(detect: *bool) void {
-    var j: usize = GRID_VERTICAL_SIZE - 2;
+    var j: i32 = GRID_VERTICAL_SIZE - 2; // Keep j as i32
     while (j >= 0) : (j -= 1) {
         for (1..GRID_HORIZONTAL_SIZE - 1) |i| {
-            if ((grid[i][j] == GridSquare.moving) and ((grid[i][j + 1] == GridSquare.full) or (grid[i][j + 1] == GridSquare.block))) {
+            if ((grid[i][@as(usize, j)] == GridSquare.moving) and
+                ((grid[i][@as(usize, j + 1)] == GridSquare.full) or
+                    (grid[i][@as(usize, j + 1)] == GridSquare.block)))
+            {
                 detect.* = true;
             }
         }
