@@ -1,6 +1,4 @@
 const std = @import("std");
-const math = std.math;
-const time = std.time;
 const rl = @import("raylib");
 
 const SQUARE_SIZE = 20;
@@ -179,7 +177,7 @@ fn updateGame() !void {
 fn drawGame() !void {
     rl.beginDrawing();
     defer rl.endDrawing();
-    rl.clearBackground(color.black);
+    rl.clearBackground(color.ray_white);
     if (!gameOver) {
         var offset: rl.Vector2 = undefined;
         offset.x = @as(i32, (@as(i32, screenWidth) / 2 - @as(i32, (GRID_HORIZONTAL_SIZE * SQUARE_SIZE / 2)) - 50));
@@ -234,8 +232,10 @@ fn drawGame() !void {
         drawText("INCOMING:", @as(i32, @intFromFloat(offset.x)), @as(i32, @intFromFloat(offset.y - 100)), 10, color.light_gray);
         drawText(rl.textFormat("LINES:  %08i", .{lines * 300}), @as(i32, @intFromFloat(offset.x)), @as(i32, @intFromFloat(offset.y + 20)), 10, color{ .r = 57, .g = 255, .b = 20, .a = 255 });
 
-        if (pause) drawText("GAME PAUSED", screenWidth / 2 - @divTrunc(rl.measureText("GAME PAUSED", 40), 2), screenHeight / 2 - 40, 40, color.light_gray);
+        if (pause) drawText("GAME PAUSED", screenWidth / 2 - @divTrunc(rl.measureText("GAME PAUSED", 40), 2), screenHeight / 2 - 40, 40, color{ .r = 57, .g = 255, .b = 20, .a = 255 });
     } else {
+        drawText("GAME OVER :(", @divTrunc(rl.getScreenWidth(), 2) - @divTrunc(rl.measureText("PRESS [ENTER] TO PLAY AGAIN", 20), 2), @divTrunc(rl.getScreenHeight(), 2) - 80, 20, color.red);
+
         drawText("PRESS [ENTER] TO PLAY AGAIN", @divTrunc(rl.getScreenWidth(), 2) - @divTrunc(rl.measureText("PRESS [ENTER] TO PLAY AGAIN", 20), 2), @divTrunc(rl.getScreenHeight(), 2) - 50, 20, color.red);
     }
 }
